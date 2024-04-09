@@ -27,7 +27,12 @@ void AGoKart::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FVector Translation = Velocity * 100 * DeltaTime;
+	FVector Force = GetActorForwardVector() * MaxDrivingForce * ThrottleValue;	
+
+	FVector Acceleration = Force / Mass;	// a = F/m (F = 힘, m = 질량)
+	Velocity += Acceleration * DeltaTime;	// v = u + at (u = 처음 속도, a = 가속도, t = 시간)
+
+	FVector Translation = Velocity * 100 * DeltaTime;	// cm/s -> m/s 변환
 
 	AddActorWorldOffset(Translation, true);
 
@@ -48,7 +53,7 @@ void AGoKart::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AGoKart::Throttle(const FInputActionValue& Value)
 {
-	Velocity = GetActorForwardVector() * 20 * Value.Get<float>();
+	ThrottleValue = Value.Get<float>();
 }
 
 

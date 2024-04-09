@@ -34,7 +34,20 @@ private:
 	/** Handles throttle input */
 	void Throttle(const struct FInputActionValue& Value);
 
-
+	/// <summary>
+	/// 자동차의 질량(kg)
+	/// </summary>
 	UPROPERTY(EditAnywhere)
+	float Mass = 1000;		
+
+	/// <summary>
+	/// 쓰로틀이 완전히 내려갔을때 차에 가해지는 힘 (N)
+	/// </summary>
+	UPROPERTY(EditAnywhere)
+	float MaxDrivingForce = 10000;  
+
+
 	FVector Velocity;
+
+	float ThrottleValue;
 };
