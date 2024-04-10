@@ -32,8 +32,19 @@ void AGoKart::Tick(float DeltaTime)
 	FVector Acceleration = Force / Mass;	// a = F/m (F = 힘, m = 질량)
 	Velocity += Acceleration * DeltaTime;	// v = u + at (u = 처음 속도, a = 가속도, t = 시간)
 
-	UpdateLocationFromVelocity(DeltaTime);	//속도에 따른 위치 업데이트
+	ApplyRotation(DeltaTime);
+		
 
+	UpdateLocationFromVelocity(DeltaTime);	//속도에 따른 위치 업데이트
+}
+
+void AGoKart::ApplyRotation(float DeltaTime)
+{
+	float RotationAngle = MaxDegreesPerSecond * SteeringThrow * DeltaTime;	//회전량 계산
+	FQuat RotationDelta(GetActorUpVector(), FMath::DegreesToRadians(RotationAngle));	//회전량 계산
+
+	Velocity = RotationDelta.RotateVector(Velocity);	//속도 벡터에 회전 적용	
+	AddActorWorldRotation(RotationDelta);	//회전 적용
 }
 
 void AGoKart::UpdateLocationFromVelocity(float DeltaTime)
@@ -60,12 +71,21 @@ void AGoKart::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 		// throttle 
 		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Triggered, this, &AGoKart::Throttle);
 		EnhancedInputComponent->BindAction(ThrottleAction, ETriggerEvent::Completed, this, &AGoKart::Throttle);
+
+		// steering 
+		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Triggered, this, &AGoKart::Steering);
+		EnhancedInputComponent->BindAction(SteeringAction, ETriggerEvent::Completed, this, &AGoKart::Steering);
 	}
 }
 
 void AGoKart::Throttle(const FInputActionValue& Value)
 {
 	ThrottleValue = Value.Get<float>();
+}
+
+void AGoKart::Steering(const FInputActionValue& Value)
+{
+	SteeringThrow = Value.Get<float>();
 }
 
 

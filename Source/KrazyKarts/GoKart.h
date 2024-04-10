@@ -22,19 +22,24 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	class UInputAction* ThrottleAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	class UInputAction* SteeringAction;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
+	void ApplyRotation(float DeltaTime);
 	void UpdateLocationFromVelocity(float DeltaTime);
 
 	/** Handles throttle input */
 	void Throttle(const struct FInputActionValue& Value);
-
+	void Steering(const struct FInputActionValue& Value);
 	
 
 	/// <summary>
@@ -49,8 +54,14 @@ private:
 	UPROPERTY(EditAnywhere)
 	float MaxDrivingForce = 10000;  
 
+	/// <summary>
+	/// 초당 회전 각도 (deg/s)
+	/// </summary>
+	UPROPERTY(EditAnywhere)
+	float MaxDegreesPerSecond = 90;
 
 	FVector Velocity;
 
 	float ThrottleValue;
+	float SteeringThrow;
 };
