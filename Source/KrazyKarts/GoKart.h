@@ -30,9 +30,12 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
+	void UpdateLocationFromVelocity(float DeltaTime);
 
 	/** Handles throttle input */
 	void Throttle(const struct FInputActionValue& Value);
+
+	
 
 	/// <summary>
 	/// 자동차의 질량(kg)

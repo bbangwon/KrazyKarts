@@ -32,10 +32,22 @@ void AGoKart::Tick(float DeltaTime)
 	FVector Acceleration = Force / Mass;	// a = F/m (F = 힘, m = 질량)
 	Velocity += Acceleration * DeltaTime;	// v = u + at (u = 처음 속도, a = 가속도, t = 시간)
 
+	UpdateLocationFromVelocity(DeltaTime);	//속도에 따른 위치 업데이트
+
+}
+
+void AGoKart::UpdateLocationFromVelocity(float DeltaTime)
+{
 	FVector Translation = Velocity * 100 * DeltaTime;	// cm/s -> m/s 변환
 
-	AddActorWorldOffset(Translation, true);
+	FHitResult HitResult;
+	AddActorWorldOffset(Translation, true, &HitResult);
 
+	//충돌 처리
+	if (HitResult.IsValidBlockingHit())
+	{
+		Velocity = FVector::ZeroVector;
+	}
 }
 
 // Called to bind functionality to input
