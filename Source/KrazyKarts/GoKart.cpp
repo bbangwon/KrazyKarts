@@ -43,7 +43,7 @@ void AGoKart::Tick(float DeltaTime)
 /// <returns></returns>
 FVector AGoKart::GetResistance()
 {
-	return -Velocity.GetSafeNormal() * Velocity.SizeSquared() * DragCoefficient;	
+	return -Velocity.GetSafeNormal() * Velocity.SizeSquared() * DragCoefficient;	// F = -v^2 * DragCoefficient
 }
 
 void AGoKart::ApplyRotation(float DeltaTime)
