@@ -56,8 +56,9 @@ FVector AGoKart::GetRollingResistance()
 
 void AGoKart::ApplyRotation(float DeltaTime)
 {
-	float RotationAngle = MaxDegreesPerSecond * SteeringThrow * DeltaTime;	//회전량 계산
-	FQuat RotationDelta(GetActorUpVector(), FMath::DegreesToRadians(RotationAngle));	//회전량 계산
+	float DeltaLocation = FVector::DotProduct(GetActorForwardVector(), Velocity) * DeltaTime;	// v = s/t (v = 속도, s = 거리, t = 시간)
+	float RotationAngle = DeltaLocation / MinTurningRadius * SteeringThrow;	// s = r * theta (r = 반지름, theta = 각도)
+	FQuat RotationDelta(GetActorUpVector(), RotationAngle);	//회전 각도 계산
 
 	Velocity = RotationDelta.RotateVector(Velocity);	//속도 벡터에 회전 적용	
 	AddActorWorldRotation(RotationDelta);	//회전 적용

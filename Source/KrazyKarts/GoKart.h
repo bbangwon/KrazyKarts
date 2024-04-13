@@ -58,10 +58,10 @@ private:
 	float MaxDrivingForce = 10000;  
 
 	/// <summary>
-	/// 초당 회전 각도 (deg/s)
+	/// 완전히 틀어진 상태에서 회전 반경의 최소 반지름 (m)
 	/// </summary>
 	UPROPERTY(EditAnywhere)
-	float MaxDegreesPerSecond = 90;
+	float MinTurningRadius = 10;
 
 	UPROPERTY(EditAnywhere)
 	float DragCoefficient = 16;
