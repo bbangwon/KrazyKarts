@@ -28,7 +28,8 @@ void AGoKart::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	FVector Force = GetActorForwardVector() * MaxDrivingForce * ThrottleValue;	
-	Force += GetResistance();	// 공기 저항 계산
+	Force += GetAirResistance();	// 공기 저항 계산
+	Force += GetRollingResistance();
 
 	FVector Acceleration = Force / Mass;	// a = F/m (F = 힘, m = 질량)
 	Velocity += Acceleration * DeltaTime;	// v = u + at (u = 처음 속도, a = 가속도, t = 시간)		
@@ -41,9 +42,16 @@ void AGoKart::Tick(float DeltaTime)
 /// 공기 저항 계산
 /// </summary>
 /// <returns></returns>
-FVector AGoKart::GetResistance()
+FVector AGoKart::GetAirResistance()
 {
 	return -Velocity.GetSafeNormal() * Velocity.SizeSquared() * DragCoefficient;	// F = -v^2 * DragCoefficient
+}
+
+FVector AGoKart::GetRollingResistance()
+{
+	float AccelerationDueToGravity = -GetWorld()->GetGravityZ() / 100;	//중력 가속도 m/s^2로 변환
+	float NormalForce = Mass * AccelerationDueToGravity;	// N = m * g
+	return -Velocity.GetSafeNormal() * RollingResistanceCoefficient * NormalForce;	// F = -N * RollingResistanceCoefficient
 }
 
 void AGoKart::ApplyRotation(float DeltaTime)
