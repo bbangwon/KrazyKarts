@@ -5,19 +5,29 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "DrawDebugHelpers.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AGoKart::AGoKart()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;	//서버와 클라이언트에 동기화
 
 }
 
 // Called when the game starts or when spawned
 void AGoKart::BeginPlay()
 {
-	Super::BeginPlay();
+	Super::BeginPlay();	
+}
+
+void AGoKart::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AGoKart, ReplicatedLocation);
+	DOREPLIFETIME(AGoKart, ReplicatedRotation);
 	
 }
 
@@ -54,6 +64,17 @@ void AGoKart::Tick(float DeltaTime)
 
 	ApplyRotation(DeltaTime);
 	UpdateLocationFromVelocity(DeltaTime);	//속도에 따른 위치 업데이트	
+
+	if (HasAuthority())
+	{
+		ReplicatedLocation = GetActorLocation();	//위치 동기화
+		ReplicatedRotation = GetActorRotation();	//회전 동기화
+	}
+	else
+	{
+		SetActorLocation(ReplicatedLocation);	//위치 동기화
+		SetActorRotation(ReplicatedRotation);	//회전 동기화
+	}
 
 	DrawDebugString(GetWorld(), FVector(0, 0, 100), GetEnumText(GetLocalRole()), this, FColor::White, DeltaTime);
 }
