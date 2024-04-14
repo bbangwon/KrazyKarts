@@ -4,6 +4,7 @@
 #include "GoKart.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 AGoKart::AGoKart()
@@ -18,6 +19,23 @@ void AGoKart::BeginPlay()
 {
 	Super::BeginPlay();
 	
+}
+
+FString GetEnumText(ENetRole Role)
+{
+	switch (Role)
+	{
+	case ROLE_None:
+		return "None";
+	case ROLE_SimulatedProxy:
+		return "SimulatedProxy";
+	case ROLE_AutonomousProxy:
+		return "AutonomousProxy";
+	case ROLE_Authority:
+		return "Authority";
+	default:
+		return "Error";
+	}
 }
 
 
@@ -35,7 +53,9 @@ void AGoKart::Tick(float DeltaTime)
 	Velocity += Acceleration * DeltaTime;	// v = u + at (u = 처음 속도, a = 가속도, t = 시간)		
 
 	ApplyRotation(DeltaTime);
-	UpdateLocationFromVelocity(DeltaTime);	//속도에 따른 위치 업데이트
+	UpdateLocationFromVelocity(DeltaTime);	//속도에 따른 위치 업데이트	
+
+	DrawDebugString(GetWorld(), FVector(0, 0, 100), GetEnumText(GetLocalRole()), this, FColor::White, DeltaTime);
 }
 
 /// <summary>
@@ -97,11 +117,13 @@ void AGoKart::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 void AGoKart::Throttle(const FInputActionValue& Value)
 {	
+	ThrottleValue = Value.Get<float>();
 	Server_MoveForward(Value.Get<float>());
 }
 
 void AGoKart::Steering(const FInputActionValue& Value)
 {
+	SteeringThrow = Value.Get<float>();
 	Server_MoveRight(Value.Get<float>());
 }
 
