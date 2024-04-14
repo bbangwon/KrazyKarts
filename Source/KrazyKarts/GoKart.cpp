@@ -96,13 +96,37 @@ void AGoKart::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 }
 
 void AGoKart::Throttle(const FInputActionValue& Value)
-{
-	ThrottleValue = Value.Get<float>();
+{	
+	Server_MoveForward(Value.Get<float>());
 }
 
 void AGoKart::Steering(const FInputActionValue& Value)
 {
-	SteeringThrow = Value.Get<float>();
+	Server_MoveRight(Value.Get<float>());
+}
+
+/// <summary>
+/// RPC ÇÔ¼ö
+/// </summary>
+/// <param name="Value"></param>
+void AGoKart::Server_MoveForward_Implementation(float Value)
+{
+	ThrottleValue = Value;
+}
+
+bool AGoKart::Server_MoveForward_Validate(float Value)
+{
+	return FMath::Abs(Value) <= 1;
+}
+
+void AGoKart::Server_MoveRight_Implementation(float Value)
+{
+	SteeringThrow = Value;
+}
+
+bool AGoKart::Server_MoveRight_Validate(float Value)
+{
+	return FMath::Abs(Value) <= 1;
 }
 
 

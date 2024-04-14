@@ -43,6 +43,12 @@ private:
 	/** Handles throttle input */
 	void Throttle(const struct FInputActionValue& Value);
 	void Steering(const struct FInputActionValue& Value);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_MoveForward(float Value);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_MoveRight(float Value);
 	
 
 	/// <summary>
