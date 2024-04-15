@@ -32,8 +32,6 @@ void AGoKart::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AGoKart, ServerState);
-	DOREPLIFETIME(AGoKart, ThrottleValue);
-	DOREPLIFETIME(AGoKart, SteeringThrow);
 }
 
 FString GetEnumText(ENetRole Role)
@@ -53,8 +51,6 @@ FString GetEnumText(ENetRole Role)
 	}
 }
 
-
-
 // Called every frame
 void AGoKart::Tick(float DeltaTime)
 {
@@ -69,26 +65,23 @@ void AGoKart::Tick(float DeltaTime)
 		//TODO: Set Time
 
 		Server_SendMove(Move);
+		SimulateMove(Move);
 	}
 
-	FVector Force = GetActorForwardVector() * MaxDrivingForce * ThrottleValue;	
+	DrawDebugString(GetWorld(), FVector(0, 0, 100), GetEnumText(GetLocalRole()), this, FColor::White, DeltaTime);
+}
+
+void AGoKart::SimulateMove(const FGoKartMove& Move)
+{
+	FVector Force = GetActorForwardVector() * MaxDrivingForce * Move.ThrottleValue;
 	Force += GetAirResistance();	// 공기 저항 계산
 	Force += GetRollingResistance();
 
 	FVector Acceleration = Force / Mass;	// a = F/m (F = 힘, m = 질량)
-	Velocity += Acceleration * DeltaTime;	// v = u + at (u = 처음 속도, a = 가속도, t = 시간)		
+	Velocity += Acceleration * Move.DeltaTime;	// v = u + at (u = 처음 속도, a = 가속도, t = 시간)		
 
-	ApplyRotation(DeltaTime);
-	UpdateLocationFromVelocity(DeltaTime);	//속도에 따른 위치 업데이트	
-
-	if (HasAuthority())
-	{
-		ServerState.Transform = GetActorTransform();	//위치 동기화
-		ServerState.Velocity = Velocity;	//속도 동기화
-		//TODO: Update last move
-	}
-
-	DrawDebugString(GetWorld(), FVector(0, 0, 100), GetEnumText(GetLocalRole()), this, FColor::White, DeltaTime);
+	ApplyRotation(Move.DeltaTime, Move.SteeringThrow);
+	UpdateLocationFromVelocity(Move.DeltaTime);	//속도에 따른 위치 업데이트	
 }
 
 /// <summary>
@@ -107,10 +100,10 @@ FVector AGoKart::GetRollingResistance()
 	return -Velocity.GetSafeNormal() * RollingResistanceCoefficient * NormalForce;	// F = -N * RollingResistanceCoefficient
 }
 
-void AGoKart::ApplyRotation(float DeltaTime)
+void AGoKart::ApplyRotation(float DeltaTime, float SteeringThrowValue)
 {
 	float DeltaLocation = FVector::DotProduct(GetActorForwardVector(), Velocity) * DeltaTime;	// v = s/t (v = 속도, s = 거리, t = 시간)
-	float RotationAngle = DeltaLocation / MinTurningRadius * SteeringThrow;	// s = r * theta (r = 반지름, theta = 각도)
+	float RotationAngle = DeltaLocation / MinTurningRadius * SteeringThrowValue;	// s = r * theta (r = 반지름, theta = 각도)
 	FQuat RotationDelta(GetActorUpVector(), RotationAngle);	//회전 각도 계산
 
 	Velocity = RotationDelta.RotateVector(Velocity);	//속도 벡터에 회전 적용	
@@ -170,8 +163,10 @@ void AGoKart::OnRep_ServerState()
 /// <param name="Value"></param>
 void AGoKart::Server_SendMove_Implementation(FGoKartMove Move)
 {
-	ThrottleValue = Move.ThrottleValue;
-	SteeringThrow = Move.SteeringThrow;
+	SimulateMove(Move);
+	ServerState.LastMove = Move;
+	ServerState.Transform = GetActorTransform();
+	ServerState.Velocity = Velocity;
 }
 
 bool AGoKart::Server_SendMove_Validate(FGoKartMove Move)

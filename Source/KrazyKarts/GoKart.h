@@ -70,10 +70,12 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 private:
+	void SimulateMove(const FGoKartMove& Move);
+
 	FVector GetAirResistance();
 	FVector GetRollingResistance();
 
-	void ApplyRotation(float DeltaTime);
+	void ApplyRotation(float DeltaTime, float SteeringThrow);
 	void UpdateLocationFromVelocity(float DeltaTime);
 
 	/** Handles throttle input */
@@ -121,9 +123,6 @@ private:
 	UFUNCTION()
 	void OnRep_ServerState();
 
-	UPROPERTY(Replicated)
 	float ThrottleValue;
-
-	UPROPERTY(Replicated)
 	float SteeringThrow;
 };
