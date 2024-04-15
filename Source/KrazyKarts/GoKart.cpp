@@ -58,12 +58,12 @@ void AGoKart::Tick(float DeltaTime)
 
 	if (IsLocallyControlled())
 	{
-		FGoKartMove Move;
-		Move.DeltaTime = DeltaTime;
-		Move.SteeringThrow = SteeringThrow;
-		Move.ThrottleValue = ThrottleValue;
-		//TODO: Set Time
+		FGoKartMove Move = CreateMove(DeltaTime);
 
+		if(!HasAuthority())
+			UnacknowledgedMoves.Add(Move);
+
+		UE_LOG(LogTemp, Warning, TEXT("Queue length: %d"), UnacknowledgedMoves.Num());
 		Server_SendMove(Move);
 		SimulateMove(Move);
 	}
@@ -82,6 +82,29 @@ void AGoKart::SimulateMove(const FGoKartMove& Move)
 
 	ApplyRotation(Move.DeltaTime, Move.SteeringThrow);
 	UpdateLocationFromVelocity(Move.DeltaTime);	//속도에 따른 위치 업데이트	
+}
+
+FGoKartMove AGoKart::CreateMove(float DeltaTime)
+{
+	FGoKartMove Move;
+	Move.DeltaTime = DeltaTime;
+	Move.SteeringThrow = SteeringThrow;
+	Move.ThrottleValue = ThrottleValue;
+	Move.Time = GetWorld()->TimeSeconds;
+	return Move;
+}
+
+void AGoKart::ClearAcknowledgedMoves(FGoKartMove LastMove)
+{
+	TArray<FGoKartMove> NewMoves;
+	for (const FGoKartMove& Move : UnacknowledgedMoves)
+	{
+		if (Move.Time > LastMove.Time)
+		{
+			NewMoves.Add(Move);
+		}
+	}
+	UnacknowledgedMoves = NewMoves;
 }
 
 /// <summary>
@@ -155,6 +178,7 @@ void AGoKart::OnRep_ServerState()
 {
 	SetActorTransform(ServerState.Transform);	//위치 동기화
 	Velocity = ServerState.Velocity;	//속도 동기화
+	ClearAcknowledgedMoves(ServerState.LastMove);	//동기화된 이동 삭제
 }
 
 /// <summary>

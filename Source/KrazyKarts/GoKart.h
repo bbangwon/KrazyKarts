@@ -72,6 +72,9 @@ public:
 private:
 	void SimulateMove(const FGoKartMove& Move);
 
+	FGoKartMove CreateMove(float DeltaTime);
+	void ClearAcknowledgedMoves(FGoKartMove LastMove);
+
 	FVector GetAirResistance();
 	FVector GetRollingResistance();
 
@@ -125,4 +128,6 @@ private:
 
 	float ThrottleValue;
 	float SteeringThrow;
+
+	TArray<FGoKartMove> UnacknowledgedMoves;
 };
