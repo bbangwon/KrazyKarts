@@ -31,8 +31,7 @@ void AGoKart::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AGoKart, ReplicatedTransform);
-	DOREPLIFETIME(AGoKart, Velocity);
+	DOREPLIFETIME(AGoKart, ServerState);
 	DOREPLIFETIME(AGoKart, ThrottleValue);
 	DOREPLIFETIME(AGoKart, SteeringThrow);
 }
@@ -61,6 +60,17 @@ void AGoKart::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (IsLocallyControlled())
+	{
+		FGoKartMove Move;
+		Move.DeltaTime = DeltaTime;
+		Move.SteeringThrow = SteeringThrow;
+		Move.ThrottleValue = ThrottleValue;
+		//TODO: Set Time
+
+		Server_SendMove(Move);
+	}
+
 	FVector Force = GetActorForwardVector() * MaxDrivingForce * ThrottleValue;	
 	Force += GetAirResistance();	// 공기 저항 계산
 	Force += GetRollingResistance();
@@ -73,7 +83,9 @@ void AGoKart::Tick(float DeltaTime)
 
 	if (HasAuthority())
 	{
-		ReplicatedTransform = GetActorTransform();	//위치 동기화
+		ServerState.Transform = GetActorTransform();	//위치 동기화
+		ServerState.Velocity = Velocity;	//속도 동기화
+		//TODO: Update last move
 	}
 
 	DrawDebugString(GetWorld(), FVector(0, 0, 100), GetEnumText(GetLocalRole()), this, FColor::White, DeltaTime);
@@ -139,42 +151,30 @@ void AGoKart::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 void AGoKart::Throttle(const FInputActionValue& Value)
 {	
 	ThrottleValue = Value.Get<float>();
-	Server_MoveForward(Value.Get<float>());
 }
 
 void AGoKart::Steering(const FInputActionValue& Value)
 {
 	SteeringThrow = Value.Get<float>();
-	Server_MoveRight(Value.Get<float>());
 }
 
-void AGoKart::OnRep_ReplicatedTransform()
+void AGoKart::OnRep_ServerState()
 {
-	SetActorTransform(ReplicatedTransform);	//위치 동기화
+	SetActorTransform(ServerState.Transform);	//위치 동기화
+	Velocity = ServerState.Velocity;	//속도 동기화
 }
 
 /// <summary>
 /// RPC 함수
 /// </summary>
 /// <param name="Value"></param>
-void AGoKart::Server_MoveForward_Implementation(float Value)
+void AGoKart::Server_SendMove_Implementation(FGoKartMove Move)
 {
-	ThrottleValue = Value;
+	ThrottleValue = Move.ThrottleValue;
+	SteeringThrow = Move.SteeringThrow;
 }
 
-bool AGoKart::Server_MoveForward_Validate(float Value)
+bool AGoKart::Server_SendMove_Validate(FGoKartMove Move)
 {
-	return FMath::Abs(Value) <= 1;
+	return true;
 }
-
-void AGoKart::Server_MoveRight_Implementation(float Value)
-{
-	SteeringThrow = Value;
-}
-
-bool AGoKart::Server_MoveRight_Validate(float Value)
-{
-	return FMath::Abs(Value) <= 1;
-}
-
-

@@ -81,11 +81,7 @@ private:
 	void Steering(const struct FInputActionValue& Value);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_MoveForward(float Value);
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_MoveRight(float Value);
-	
+	void Server_SendMove(FGoKartMove Move);
 
 	/// <summary>
 	/// 자동차의 질량(kg)
@@ -114,17 +110,16 @@ private:
 	UPROPERTY(EditAnywhere)
 	float RollingResistanceCoefficient = 0.015;
 
-	UPROPERTY(Replicated)
-	FVector Velocity;
-
 	/// <summary>
 	/// 복제
-	/// </summary>
-	UPROPERTY(ReplicatedUsing=OnRep_ReplicatedTransform)
-	FTransform ReplicatedTransform;
+	/// </summary>	
+	UPROPERTY(ReplicatedUsing = OnRep_ServerState)
+	FGoKartState ServerState;
 
+	FVector Velocity;
+	
 	UFUNCTION()
-	void OnRep_ReplicatedTransform();
+	void OnRep_ServerState();
 
 	UPROPERTY(Replicated)
 	float ThrottleValue;
