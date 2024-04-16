@@ -179,6 +179,11 @@ void AGoKart::OnRep_ServerState()
 	SetActorTransform(ServerState.Transform);	//위치 동기화
 	Velocity = ServerState.Velocity;	//속도 동기화
 	ClearAcknowledgedMoves(ServerState.LastMove);	//동기화된 이동 삭제
+
+	for (const FGoKartMove& Move : UnacknowledgedMoves)
+	{
+		SimulateMove(Move);
+	}
 }
 
 /// <summary>
