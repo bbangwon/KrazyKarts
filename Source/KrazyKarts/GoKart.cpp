@@ -14,6 +14,8 @@ AGoKart::AGoKart()
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;	//서버와 클라이언트에 동기화
 
+	MovementComponent = CreateDefaultSubobject<UGoKartMovementComponent>(TEXT("MovementComponent"));
+
 }
 
 // Called when the game starts or when spawned
@@ -56,10 +58,12 @@ void AGoKart::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if(MovementComponent == nullptr) return;
+
 	if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		FGoKartMove Move = CreateMove(DeltaTime);
-		SimulateMove(Move);
+		FGoKartMove Move = MovementComponent->CreateMove(DeltaTime);
+		MovementComponent->SimulateMove(Move);
 
 		UnacknowledgedMoves.Add(Move);
 		Server_SendMove(Move);
@@ -68,39 +72,16 @@ void AGoKart::Tick(float DeltaTime)
 	//서버면서 클라이언트일 경우
 	if (GetLocalRole() == ROLE_Authority && IsLocallyControlled())
 	{
-		FGoKartMove Move = CreateMove(DeltaTime);
+		FGoKartMove Move = MovementComponent->CreateMove(DeltaTime);
 		Server_SendMove(Move);
 	}
 
 	if (GetLocalRole() == ROLE_SimulatedProxy)
 	{
-		SimulateMove(ServerState.LastMove);
+		MovementComponent->SimulateMove(ServerState.LastMove);
 	}
 
 	DrawDebugString(GetWorld(), FVector(0, 0, 100), GetEnumText(GetLocalRole()), this, FColor::White, DeltaTime);
-}
-
-void AGoKart::SimulateMove(const FGoKartMove& Move)
-{
-	FVector Force = GetActorForwardVector() * MaxDrivingForce * Move.ThrottleValue;
-	Force += GetAirResistance();	// 공기 저항 계산
-	Force += GetRollingResistance();
-
-	FVector Acceleration = Force / Mass;	// a = F/m (F = 힘, m = 질량)
-	Velocity += Acceleration * Move.DeltaTime;	// v = u + at (u = 처음 속도, a = 가속도, t = 시간)		
-
-	ApplyRotation(Move.DeltaTime, Move.SteeringThrow);
-	UpdateLocationFromVelocity(Move.DeltaTime);	//속도에 따른 위치 업데이트	
-}
-
-FGoKartMove AGoKart::CreateMove(float DeltaTime)
-{
-	FGoKartMove Move;
-	Move.DeltaTime = DeltaTime;
-	Move.SteeringThrow = SteeringThrow;
-	Move.ThrottleValue = ThrottleValue;
-	Move.Time = GetWorld()->TimeSeconds;
-	return Move;
 }
 
 void AGoKart::ClearAcknowledgedMoves(FGoKartMove LastMove)
@@ -116,45 +97,6 @@ void AGoKart::ClearAcknowledgedMoves(FGoKartMove LastMove)
 	UnacknowledgedMoves = NewMoves;
 }
 
-/// <summary>
-/// 공기 저항 계산
-/// </summary>
-/// <returns></returns>
-FVector AGoKart::GetAirResistance()
-{
-	return -Velocity.GetSafeNormal() * Velocity.SizeSquared() * DragCoefficient;	// F = -v^2 * DragCoefficient
-}
-
-FVector AGoKart::GetRollingResistance()
-{
-	float AccelerationDueToGravity = -GetWorld()->GetGravityZ() / 100;	//중력 가속도 m/s^2로 변환
-	float NormalForce = Mass * AccelerationDueToGravity;	// N = m * g
-	return -Velocity.GetSafeNormal() * RollingResistanceCoefficient * NormalForce;	// F = -N * RollingResistanceCoefficient
-}
-
-void AGoKart::ApplyRotation(float DeltaTime, float SteeringThrowValue)
-{
-	float DeltaLocation = FVector::DotProduct(GetActorForwardVector(), Velocity) * DeltaTime;	// v = s/t (v = 속도, s = 거리, t = 시간)
-	float RotationAngle = DeltaLocation / MinTurningRadius * SteeringThrowValue;	// s = r * theta (r = 반지름, theta = 각도)
-	FQuat RotationDelta(GetActorUpVector(), RotationAngle);	//회전 각도 계산
-
-	Velocity = RotationDelta.RotateVector(Velocity);	//속도 벡터에 회전 적용	
-	AddActorWorldRotation(RotationDelta);	//회전 적용
-}
-
-void AGoKart::UpdateLocationFromVelocity(float DeltaTime)
-{
-	FVector Translation = Velocity * 100 * DeltaTime;	// cm/s -> m/s 변환
-
-	FHitResult HitResult;
-	AddActorWorldOffset(Translation, true, &HitResult);
-
-	//충돌 처리
-	if (HitResult.IsValidBlockingHit())
-	{
-		Velocity = FVector::ZeroVector;
-	}
-}
 
 // Called to bind functionality to input
 void AGoKart::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -174,24 +116,29 @@ void AGoKart::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 }
 
 void AGoKart::Throttle(const FInputActionValue& Value)
-{	
-	ThrottleValue = Value.Get<float>();
+{
+	if (MovementComponent == nullptr) return;
+	MovementComponent->SetThrottle(Value.Get<float>());
 }
 
 void AGoKart::Steering(const FInputActionValue& Value)
 {
-	SteeringThrow = Value.Get<float>();
+	if (MovementComponent == nullptr) return;
+
+	MovementComponent->SetSteeringThrow(Value.Get<float>());
 }
 
 void AGoKart::OnRep_ServerState()
 {
+	if (MovementComponent == nullptr) return;
+
 	SetActorTransform(ServerState.Transform);	//위치 동기화
-	Velocity = ServerState.Velocity;	//속도 동기화
+	MovementComponent->SetVelocity(ServerState.Velocity);	//속도 동기화
 	ClearAcknowledgedMoves(ServerState.LastMove);	//동기화된 이동 삭제
 
 	for (const FGoKartMove& Move : UnacknowledgedMoves)
 	{
-		SimulateMove(Move);
+		MovementComponent->SimulateMove(Move);
 	}
 }
 
@@ -201,10 +148,12 @@ void AGoKart::OnRep_ServerState()
 /// <param name="Value"></param>
 void AGoKart::Server_SendMove_Implementation(FGoKartMove Move)
 {
-	SimulateMove(Move);
+	if (MovementComponent == nullptr) return;
+
+	MovementComponent->SimulateMove(Move);
 	ServerState.LastMove = Move;
 	ServerState.Transform = GetActorTransform();
-	ServerState.Velocity = Velocity;
+	ServerState.Velocity = MovementComponent->GetVelocity();
 }
 
 bool AGoKart::Server_SendMove_Validate(FGoKartMove Move)
