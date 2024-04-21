@@ -29,7 +29,15 @@ void UGoKartMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	//서버면서 클라이언트일 경우
+	APawn* Owner = Cast<APawn>(GetOwner());
+	if (Owner == nullptr) return;
+
+	if (GetOwnerRole() == ROLE_AutonomousProxy || Owner->IsLocallyControlled())
+	{
+		LastMove = CreateMove(DeltaTime);
+		SimulateMove(LastMove);
+	}
 }
 
 void UGoKartMovementComponent::SimulateMove(const FGoKartMove& Move)

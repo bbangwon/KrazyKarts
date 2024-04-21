@@ -40,8 +40,9 @@ private:
 	void Throttle(const struct FInputActionValue& Value);
 	void Steering(const struct FInputActionValue& Value);
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditAnywhere)
 	UGoKartMovementComponent* MovementComponent;
-	UPROPERTY(VisibleAnywhere)
+
+	UPROPERTY(EditAnywhere)
 	UGoKartMovementReplicator* MovementReplicator;
 };

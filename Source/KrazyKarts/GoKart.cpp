@@ -15,7 +15,6 @@ AGoKart::AGoKart()
 
 	MovementComponent = CreateDefaultSubobject<UGoKartMovementComponent>(TEXT("MovementComponent"));
 	MovementReplicator = CreateDefaultSubobject<UGoKartMovementReplicator>(TEXT("MovementReplicator"));	
-
 }
 
 // Called when the game starts or when spawned
@@ -72,7 +71,7 @@ void AGoKart::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 }
 
 void AGoKart::Throttle(const FInputActionValue& Value)
-{
+{	
 	if (MovementComponent == nullptr) return;
 	MovementComponent->SetThrottle(Value.Get<float>());
 }
