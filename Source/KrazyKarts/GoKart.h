@@ -35,14 +35,14 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;	
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UGoKartMovementComponent* MovementComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UGoKartMovementReplicator* MovementReplicator;
+
 private:
 	/** Handles throttle input */
 	void Throttle(const struct FInputActionValue& Value);
 	void Steering(const struct FInputActionValue& Value);
-
-	UPROPERTY(EditAnywhere)
-	UGoKartMovementComponent* MovementComponent;
-
-	UPROPERTY(EditAnywhere)
-	UGoKartMovementReplicator* MovementReplicator;
 };
